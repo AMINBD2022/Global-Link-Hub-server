@@ -60,7 +60,7 @@ async function run() {
       res.send(result);
     });
 
-    // -----------------------------get All Products--------------------------
+    // -----------------------------get All Products or User Products by Email Filter--------------------------
 
     app.get("/products", async (req, res) => {
       const email = req.query.email;
