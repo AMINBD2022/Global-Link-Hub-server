@@ -50,15 +50,17 @@ async function run() {
       res.send(result);
     });
 
-    // add New Product
+    // ------------------------------------------------------------add New Product -----------------------------------------------------------
 
     app.post("/products", async (req, res) => {
       const newProduct = req.body;
+      console.log(newProduct);
+
       const result = await productsCollection.insertOne(newProduct);
       res.send(result);
     });
 
-    // get All Products
+    // -----------------------------get All Products--------------------------
 
     app.get("/products", async (req, res) => {
       const email = req.query.email;
@@ -66,7 +68,7 @@ async function run() {
       if (email) {
         query.buyer_email = email;
       }
-      const cursor = productsCollection.find(query);
+      const cursor = productsCollection.find(query).sort({ created_At: -1 });
       const result = await cursor.toArray();
       res.send(result);
     });
