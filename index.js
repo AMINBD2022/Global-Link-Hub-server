@@ -82,12 +82,26 @@ async function run() {
       res.send(result);
     });
 
-    // Delete Product using Product Id
+    // ----------------------- Delete Product using Product Id ------------------------------
 
     app.delete("/products/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
-      const result = productsCollection.deleteOne(query);
+      const result = await productsCollection.deleteOne(query);
+      res.send(result);
+    });
+
+    // ---------------------------- Update Old  Product ---------------------------------
+
+    app.put("/products/:id", async (req, res) => {
+      const id = req.params.id;
+      const updateProduct = req.body;
+      const query = { _id: new ObjectId(id) };
+      const update = {
+        $set: updateProduct,
+      };
+      const options = {};
+      const result = await productsCollection.updateOne(query, update, options);
       res.send(result);
     });
 
