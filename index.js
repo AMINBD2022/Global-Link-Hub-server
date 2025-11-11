@@ -28,6 +28,9 @@ async function run() {
     const db = client.db("GlobalLinkGubDataBase");
     const userCollection = db.collection("userCollection");
     const productsCollection = db.collection("productsCollection");
+    const importedProductsCollection = db.collection(
+      "importedProductsCollection"
+    );
 
     // Get Home Page of my server
     app.get("/", (req, res) => {
@@ -55,6 +58,9 @@ async function run() {
     app.post("/products", async (req, res) => {
       const newProduct = req.body;
       console.log(newProduct);
+      if (newProduct.available_quantity) {
+        newProduct.available_quantity = parseInt(newProduct.available_quantity);
+      }
 
       const result = await productsCollection.insertOne(newProduct);
       res.send(result);
@@ -97,6 +103,11 @@ async function run() {
       const id = req.params.id;
       const updateProduct = req.body;
       const query = { _id: new ObjectId(id) };
+      if (updateProduct.available_quantity) {
+        updateProduct.available_quantity = parseInt(
+          updateProduct.available_quantity
+        );
+      }
       const update = {
         $set: updateProduct,
       };
@@ -105,8 +116,67 @@ async function run() {
       res.send(result);
     });
 
+    // --------------------------------------------------update quantity  and Create New API------------------------------------------
+
+    app.put("/products/quantity/:id", async (req, res) => {
+      const { id } = req.params;
+      const quantity = parseInt(req.body.quantity);
+      const query = { _id: new ObjectId(id) };
+
+      const product = await productsCollection.findOne(query);
+      if (!product) {
+        return res.status(404).send({ message: "product not found" });
+      }
+      const available_quantity = parseInt(product.available_quantity);
+
+      if (quantity > available_quantity) {
+        return res.status(400).send({ message: "Not enough stock available" });
+      }
+      if (quantity === 0 || quantity < 0) {
+        return res
+          .status(400)
+          .send({ message: "quantity can not be 0 or nagitive" });
+      }
+
+      await productsCollection.updateOne(query, {
+        $inc: { available_quantity: -quantity },
+      });
+
+      const newImportedProduct = {
+        product_id: product._id,
+        name: product.name,
+        price: product.price,
+        image: product.image,
+        imported_quantity: quantity,
+        buyer_email: product.buyer_email,
+        imported_at: new Date(),
+      };
+
+      const importedProduct = await importedProductsCollection.insertOne(
+        newImportedProduct
+      );
+
+      res.send(importedProduct);
+    });
+
+    // ------------------------- Get All Imported Product -----------------
+
+    app.get("/importedProducts", async (req, res) => {
+      const email = req.query.email;
+      const query = {};
+      if (email) {
+        query.buyer_email = email;
+      }
+
+      const cursor = importedProductsCollection.find(query);
+      const result = await cursor.toArray();
+      res.send(result);
+    });
+
+    // ------------------------- Get All Imported Product  Function End ------------------------
+
     // Send a ping to confirm a successful connection
-    // await client.db("admin").command({ ping: 1 });
+    await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
