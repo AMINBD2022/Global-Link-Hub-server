@@ -34,7 +34,7 @@ async function run() {
 
     // Get Home Page of my server
     app.get("/", (req, res) => {
-      res.send({ message: "this server is only for Global Link Hub website" });
+      res.send(" Global Link Hub website's server is running ");
     });
 
     // // ----------------------------Add New User to server------------------------------
@@ -211,5 +211,3 @@ run().catch(console.dir);
 app.listen(port, (req, res) => {
   console.log(`my server is running in the port : ${port}`);
 });
-
-module.exports = app;
