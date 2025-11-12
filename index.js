@@ -37,21 +37,21 @@ async function run() {
       res.send({ message: "this server is only for Global Link Hub website" });
     });
 
-    // Add New User to server
+    // // ----------------------------Add New User to server------------------------------
 
-    app.post("/users", async (req, res) => {
-      const newUser = req.body;
-      const result = await userCollection.insertOne(newUser);
-      res.send(result);
-    });
+    // app.post("/users", async (req, res) => {
+    //   const newUser = req.body;
+    //   const result = await userCollection.insertOne(newUser);
+    //   res.send(result);
+    // });
 
-    // Get All User
+    // //----------------------------- Get All User-------------------------------------
 
-    app.get("/users", async (req, res) => {
-      const cursor = userCollection.find();
-      const result = await cursor.toArray();
-      res.send(result);
-    });
+    // app.get("/users", async (req, res) => {
+    //   const cursor = userCollection.find();
+    //   const result = await cursor.toArray();
+    //   res.send(result);
+    // });
 
     // ------------------------------------------------------------add New Product -----------------------------------------------------------
 
@@ -72,14 +72,14 @@ async function run() {
       const email = req.query.email;
       const query = {};
       if (email) {
-        query.buyer_email = email;
+        query.seller_email = email;
       }
       const cursor = productsCollection.find(query).sort({ created_At: -1 });
       const result = await cursor.toArray();
       res.send(result);
     });
 
-    // get Single Product
+    // ------------------------------------------------get Single Product---------------------------
 
     app.get("/products/:id", async (req, res) => {
       const id = req.params.id;
@@ -120,6 +120,7 @@ async function run() {
 
     app.put("/products/quantity/:id", async (req, res) => {
       const { id } = req.params;
+      const { user_email } = req.body;
       const quantity = parseInt(req.body.quantity);
       const query = { _id: new ObjectId(id) };
 
@@ -146,9 +147,11 @@ async function run() {
         product_id: product._id,
         name: product.name,
         price: product.price,
+        rating: product.rating,
         image: product.image,
+        origin_country: product.origin_country,
         imported_quantity: quantity,
-        buyer_email: product.buyer_email,
+        user_email: user_email,
         imported_at: new Date(),
       };
 
@@ -165,7 +168,7 @@ async function run() {
       const email = req.query.email;
       const query = {};
       if (email) {
-        query.buyer_email = email;
+        query.user_email = email;
       }
 
       const cursor = importedProductsCollection.find(query);
@@ -175,8 +178,28 @@ async function run() {
 
     // ------------------------- Get All Imported Product  Function End ------------------------
 
+    // get Single  Imported API
+
+    app.get("/importedProducts/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await importedProductsCollection.findOne(query);
+      res.send(result);
+    });
+
+    // Delete Imported API
+
+    app.delete("/importedProducts/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await importedProductsCollection.deleteOne(query);
+      res.send(result);
+    });
+
+    // ------------------------------------------
+
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
