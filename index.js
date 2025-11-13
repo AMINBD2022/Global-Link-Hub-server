@@ -37,22 +37,6 @@ async function run() {
       res.send(" Global Link Hub website's server is running ");
     });
 
-    // // ----------------------------Add New User to server------------------------------
-
-    // app.post("/users", async (req, res) => {
-    //   const newUser = req.body;
-    //   const result = await userCollection.insertOne(newUser);
-    //   res.send(result);
-    // });
-
-    // //----------------------------- Get All User-------------------------------------
-
-    // app.get("/users", async (req, res) => {
-    //   const cursor = userCollection.find();
-    //   const result = await cursor.toArray();
-    //   res.send(result);
-    // });
-
     // ------------------------------------------------------------add New Product -----------------------------------------------------------
 
     app.post("/products", async (req, res) => {
