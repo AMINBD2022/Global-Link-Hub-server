@@ -10,9 +10,7 @@ require("dotenv").config();
 app.use(cors());
 app.use(express.json());
 
-const uri = `mongodb+srv://${process.env.GLOBALLINKHUB_USER}:${process.env.GLOBALLINKHUB_PASS}@cluster0.ty9bkxj.mongodb.net/?appName=Cluster0`;
-
-// Create a MongoClient with a MongoClientOptions object to set the Stable API version
+const uri = process.env.URI;
 
 const client = new MongoClient(uri, {
   serverApi: {
@@ -32,20 +30,15 @@ async function run() {
       "importedProductsCollection"
     );
 
-    // Get Home Page of my server
+    // Get Home Page of Global Link Hub server
     app.get("/", (req, res) => {
-      res.send(" Global Link Hub website's server is running ");
+      res.send(" Global Link Hub website's server is running...");
     });
 
-    // ------------------------------------------------------------add New Product -----------------------------------------------------------
+    // --------------------------add New Product ----------------------------------
 
     app.post("/products", async (req, res) => {
       const newProduct = req.body;
-      console.log(newProduct);
-      if (newProduct.available_quantity) {
-        newProduct.available_quantity = parseInt(newProduct.available_quantity);
-      }
-
       const result = await productsCollection.insertOne(newProduct);
       res.send(result);
     });
@@ -85,22 +78,17 @@ async function run() {
 
     app.put("/products/:id", async (req, res) => {
       const id = req.params.id;
-      const updateProduct = req.body;
+      const product = req.body;
       const query = { _id: new ObjectId(id) };
-      if (updateProduct.available_quantity) {
-        updateProduct.available_quantity = parseInt(
-          updateProduct.available_quantity
-        );
-      }
       const update = {
-        $set: updateProduct,
+        $set: product,
       };
       const options = {};
       const result = await productsCollection.updateOne(query, update, options);
       res.send(result);
     });
 
-    // --------------------------------------------------update quantity  and Create New API------------------------------------------
+    // --------------------update quantity  and Create New API--------------------------
 
     app.put("/products/quantity/:id", async (req, res) => {
       const { id } = req.params;
@@ -112,9 +100,7 @@ async function run() {
       if (!product) {
         return res.status(404).send({ message: "product not found" });
       }
-      const available_quantity = parseInt(product.available_quantity);
-
-      if (quantity > available_quantity) {
+      if (quantity > product.available_quantity) {
         return res.status(400).send({ message: "Not enough stock available" });
       }
       if (quantity === 0 || quantity < 0) {
@@ -139,11 +125,11 @@ async function run() {
         imported_at: new Date(),
       };
 
-      const importedProduct = await importedProductsCollection.insertOne(
+      const result = await importedProductsCollection.insertOne(
         newImportedProduct
       );
 
-      res.send(importedProduct);
+      res.send(result);
     });
 
     // ------------------------- Get All Imported Product -----------------
