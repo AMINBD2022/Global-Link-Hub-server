@@ -9,9 +9,7 @@ require("dotenv").config();
 
 app.use(cors());
 app.use(express.json());
-
 const uri = process.env.URI;
-
 const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
@@ -24,11 +22,8 @@ async function run() {
   try {
     await client.connect();
     const db = client.db("GlobalLinkGubDataBase");
-    const userCollection = db.collection("userCollection");
-    const productsCollection = db.collection("productsCollection");
-    const importedProductsCollection = db.collection(
-      "importedProductsCollection"
-    );
+    const products = db.collection("products");
+    const importedProducts = db.collection("importedProducts");
 
     // Get Home Page of Global Link Hub server
     app.get("/", (req, res) => {
@@ -38,22 +33,27 @@ async function run() {
     // --------------------------add New Product ----------------------------------
 
     app.post("/products", async (req, res) => {
-      const newProduct = req.body;
-      const result = await productsCollection.insertOne(newProduct);
+      const product = req.body;
+      const result = await products.insertOne(product);
       res.send(result);
     });
 
     // -----------------------------get All Products or User Products by Email Filter--------------------------
 
     app.get("/products", async (req, res) => {
-      const email = req.query.email;
+      const { email, limit = 0, skip = 0 } = req.query;
       const query = {};
       if (email) {
         query.seller_email = email;
       }
-      const cursor = productsCollection.find(query).sort({ created_At: -1 });
-      const result = await cursor.toArray();
-      res.send(result);
+      const result = await products
+        .find(query)
+        .limit(Number(limit))
+        .skip(Number(skip))
+        .sort({ created_At: -1 })
+        .toArray();
+      const count = await products.countDocuments(query);
+      res.send({ result, total: count });
     });
 
     // ------------------------------------------------get Single Product---------------------------
@@ -61,7 +61,7 @@ async function run() {
     app.get("/products/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
-      const result = await productsCollection.findOne(query);
+      const result = await products.findOne(query);
       res.send(result);
     });
 
@@ -70,7 +70,7 @@ async function run() {
     app.delete("/products/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
-      const result = await productsCollection.deleteOne(query);
+      const result = await products.deleteOne(query);
       res.send(result);
     });
 
@@ -84,7 +84,7 @@ async function run() {
         $set: product,
       };
       const options = {};
-      const result = await productsCollection.updateOne(query, update, options);
+      const result = await products.updateOne(query, update, options);
       res.send(result);
     });
 
@@ -92,42 +92,32 @@ async function run() {
 
     app.put("/products/quantity/:id", async (req, res) => {
       const { id } = req.params;
-      const { user_email } = req.body;
-      const quantity = parseInt(req.body.quantity);
+      const { user_email, quantity } = req.body;
+      console.log(req.body);
+
       const query = { _id: new ObjectId(id) };
 
-      const product = await productsCollection.findOne(query);
+      const product = await products.findOne(query);
       if (!product) {
         return res.status(404).send({ message: "product not found" });
       }
-      if (quantity > product.available_quantity) {
-        return res.status(400).send({ message: "Not enough stock available" });
-      }
-      if (quantity === 0 || quantity < 0) {
-        return res
-          .status(400)
-          .send({ message: "quantity can not be 0 or nagitive" });
-      }
-
-      await productsCollection.updateOne(query, {
-        $inc: { available_quantity: -quantity },
+      await products.updateOne(query, {
+        $inc: { availableQuantity: -quantity },
       });
 
-      const newImportedProduct = {
+      const importProduct = {
         product_id: product._id,
         name: product.name,
         price: product.price,
         rating: product.rating,
         image: product.image,
         origin_country: product.origin_country,
-        imported_quantity: quantity,
+        importQty: quantity,
         user_email: user_email,
-        imported_at: new Date(),
+        importAt: new Date(),
       };
 
-      const result = await importedProductsCollection.insertOne(
-        newImportedProduct
-      );
+      const result = await importedProducts.insertOne(importProduct);
 
       res.send(result);
     });
@@ -141,7 +131,7 @@ async function run() {
         query.user_email = email;
       }
 
-      const cursor = importedProductsCollection.find(query);
+      const cursor = importedProducts.find(query);
       const result = await cursor.toArray();
       res.send(result);
     });
@@ -153,7 +143,7 @@ async function run() {
     app.get("/importedProducts/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
-      const result = await importedProductsCollection.findOne(query);
+      const result = await importedProducts.findOne(query);
       res.send(result);
     });
 
@@ -162,7 +152,7 @@ async function run() {
     app.delete("/importedProducts/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
-      const result = await importedProductsCollection.deleteOne(query);
+      const result = await importedProducts.deleteOne(query);
       res.send(result);
     });
 
@@ -170,14 +160,16 @@ async function run() {
 
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
-    console.log(
-      "Pinged your deployment. You successfully connected to MongoDB!"
-    );
+    // console.log(
+    //   "Pinged your deployment. You successfully connected to MongoDB!"
+    // );
   } finally {
   }
 }
 run().catch(console.dir);
 
-app.listen(port, (req, res) => {
-  console.log(`my server is running in the port : ${port}`);
-});
+// app.listen(port, (req, res) => {
+//   console.log(`my server is running in the port : ${port}`);
+// });
+
+export default app;
