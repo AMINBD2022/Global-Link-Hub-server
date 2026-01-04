@@ -33,7 +33,10 @@ async function run() {
     // --------------------------add New Product ----------------------------------
 
     app.post("/products", async (req, res) => {
-      const product = req.body;
+      const product = {
+        ...req.body,
+        createdAt: new Date(),
+      };
       const result = await products.insertOne(product);
       res.send(result);
     });
@@ -41,51 +44,67 @@ async function run() {
     // -----------------------------get All Products or User Products by Email Filter--------------------------
 
     app.get("/products", async (req, res) => {
-      const { email, limit = 0, skip = 0 } = req.query;
-      const query = {};
-      if (email) {
-        query.seller_email = email;
+      try {
+        const { email, limit = 0, skip = 0 } = req.query;
+        const query = {};
+        if (email) {
+          query.seller_email = email;
+        }
+        const result = await products
+          .find(query)
+          .limit(Number(limit))
+          .skip(Number(skip))
+          .sort({ createdAt: -1 })
+          .toArray();
+        const count = await products.countDocuments(query);
+        res.send({ result, total: count });
+      } catch (err) {
+        res.status(500).send({ message: "server error", err });
       }
-      const result = await products
-        .find(query)
-        .limit(Number(limit))
-        .skip(Number(skip))
-        .sort({ created_At: -1 })
-        .toArray();
-      const count = await products.countDocuments(query);
-      res.send({ result, total: count });
     });
 
     // ------------------------------------------------get Single Product---------------------------
 
     app.get("/products/:id", async (req, res) => {
-      const id = req.params.id;
-      const query = { _id: new ObjectId(id) };
-      const result = await products.findOne(query);
-      res.send(result);
+      try {
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) };
+        const result = await products.findOne(query);
+        res.send(result);
+      } catch (err) {
+        res.status(500).send({ message: "server error", err });
+      }
     });
 
     // ----------------------- Delete Product using Product Id ------------------------------
 
     app.delete("/products/:id", async (req, res) => {
-      const id = req.params.id;
-      const query = { _id: new ObjectId(id) };
-      const result = await products.deleteOne(query);
-      res.send(result);
+      try {
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) };
+        const result = await products.deleteOne(query);
+        res.send(result);
+      } catch (err) {
+        res.status(500).send({ message: "server error", err });
+      }
     });
 
     // ---------------------------- Update Old  Product ---------------------------------
 
     app.put("/products/:id", async (req, res) => {
-      const id = req.params.id;
-      const product = req.body;
-      const query = { _id: new ObjectId(id) };
-      const update = {
-        $set: product,
-      };
-      const options = {};
-      const result = await products.updateOne(query, update, options);
-      res.send(result);
+      try {
+        const id = req.params.id;
+        const product = req.body;
+        const query = { _id: new ObjectId(id) };
+        const update = {
+          $set: product,
+        };
+        const options = {};
+        const result = await products.updateOne(query, update, options);
+        res.send(result);
+      } catch (err) {
+        res.status(500).send({ message: "server error", err });
+      }
     });
 
     // --------------------update quantity  and Create New API--------------------------

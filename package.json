@@ -1,5 +1,5 @@
 {
-  "name": "globallink_hub",
+  "name": "globallink_hub_server",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
